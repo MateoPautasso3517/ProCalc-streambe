@@ -1,0 +1,19 @@
+/* ProCalc — estilos base
+   La interfaz final (layout, temas, responsive) se definirá en etapas posteriores.
+*/
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+#app {
+  padding: 1.5rem;
+}
