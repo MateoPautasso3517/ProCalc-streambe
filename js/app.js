@@ -1,6 +1,6 @@
 /**
- * ProCalc — application bootstrap (Stage A).
- * Wires shared utils only. Core, UI, converters, and history come in later stages.
+ * ProCalc — application bootstrap (Stage B1).
+ * Wires utils + core. UI, converters, and history come in later stages.
  */
 (function (global) {
   "use strict";
@@ -14,11 +14,19 @@
     }
   }
 
+  function assertCoreReady() {
+    var core = root.core;
+    if (!core || !core.add || !core.sin || !core.scientificParts) {
+      throw new Error("ProCalc: core failed to load. Check script order in index.html.");
+    }
+  }
+
   function boot() {
     assertUtilsReady();
-    root.stage = "A";
+    assertCoreReady();
+    root.stage = "B1";
     root.ready = true;
-    console.log("ProCalc: Stage A ready (utils + bootstrap).");
+    console.log("ProCalc: Stage B1 ready (utils + core operations).");
   }
 
   boot();

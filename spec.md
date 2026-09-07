@@ -6,7 +6,7 @@
 
 **Stack:** HTML, CSS y JavaScript vanilla (sin frameworks ni bundlers).
 
-**Estado actual:** Etapa A completada (utils mínimos + arranque). Sin motor de cálculo, sin UI de calculadora, sin conversiones ni historial.
+**Estado actual:** Etapa B1 completada (ops básicas y científicas puras en `core/`). Sin parser de expresiones, sin UI de calculadora, sin conversiones ni historial.
 
 ---
 
@@ -18,6 +18,7 @@
 | JavaScript | Scripts clásicos (sin `type="module"` por ahora) | Preferencia actual; se puede migrar a módulos ES más adelante si hace falta |
 | Dependencias | Ninguna librería externa | Mantener el proyecto liviano y sin tooling innecesario |
 | Namespace global | `window.ProCalc` | Scripts clásicos necesitan un punto de extensión compartido sin módulos |
+| Contrato del motor | `{ ok: true, value }` / `{ ok: false, error }` | Errores manejables por UI sin excepciones no controladas |
 | Pantallas | No se implementan pantallas finales aún | Evitar diseño de producto fuera de etapa |
 | Idioma UI | Inglés | Textos de UI, errores e historial en inglés (§5.4) |
 
@@ -25,59 +26,28 @@
 
 ## 3. Alcance funcional (requisitos)
 
-Funcionalidades pedidas. **Aún no implementadas** (salvo cimientos de Etapa A); quedan como alcance del producto.
+Funcionalidades pedidas. Estado por bloque:
 
-### 3.1 Operaciones básicas
+### 3.1 Operaciones básicas — **B1 hecha (API pura)**
 
-- Suma
-- Resta
-- Multiplicación
-- División
-- Porcentaje
-- Potencias
-- Raíces
-- Factorial
-- Valor absoluto
+- Suma, resta, multiplicación, división
+- Porcentaje (`percent`, `percentOf`)
+- Potencias, raíces (`sqrt`, `nthRoot`)
+- Factorial, valor absoluto
 
-### 3.2 Funciones científicas
+### 3.2 Funciones científicas — **B1 hecha (API pura)**
 
-- Seno, coseno, tangente
-- Arcoseno, arcocoseno, arcotangente
-- Logaritmo decimal
-- Logaritmo natural
-- Exponencial
+- Seno, coseno, tangente (+ inversas)
+- Logaritmo decimal y natural, exponencial
 - Constantes π y e
-- Potencias de 10
-- Notación científica
+- Potencias de 10 (`pow10`)
+- Notación científica (`scientificParts` → coeficiente + exponente)
 
-### 3.3 Conversiones de unidades
+### 3.3 Conversiones de unidades — pendiente (Etapa E)
 
-- Longitud
-- Masa
-- Temperatura
-- Tiempo
-- Área
-- Volumen
-- Velocidad
-- Energía
-- Monedas
+### 3.4 Conversión entre bases numéricas — pendiente (Etapa E)
 
-### 3.4 Conversión entre bases numéricas
-
-- Binario
-- Decimal
-- Hexadecimal
-- Octal
-
-### 3.5 Interfaz y experiencia
-
-- Modo oscuro
-- Diseño responsive
-- Mostrar pasos del cálculo (si es posible según la operación)
-- Atajos de teclado
-- Teclado físico y virtual
-- Manejo de carga y error
-- Historial de operaciones (con datos de cada registro)
+### 3.5 Interfaz y experiencia — pendiente (C1/C2/D)
 
 ---
 
@@ -85,29 +55,35 @@ Funcionalidades pedidas. **Aún no implementadas** (salvo cimientos de Etapa A);
 
 ```text
 /
-├── index.html          # Punto de entrada HTML
-├── spec.md             # Esta especificación
+├── index.html
+├── spec.md
 ├── css/
-│   └── styles.css      # Estilos globales (base)
+│   └── styles.css
 ├── js/
-│   ├── app.js          # Arranque de la aplicación
-│   ├── core/           # Motor de cálculo (etapas B1/B2)
-│   ├── converters/     # Conversiones (etapa E)
-│   ├── ui/             # Interfaz (etapas C1/C2/D)
-│   └── utils/          # Utilidades compartidas (etapa A)
+│   ├── app.js
+│   ├── core/
+│   │   ├── result.js       # helpers del contrato { ok, value | error }
+│   │   ├── operations.js
+│   │   ├── scientific.js
+│   │   └── calculator.js
+│   ├── converters/     # Etapa E
+│   ├── ui/             # Etapas C1/C2/D
+│   └── utils/
 │       ├── errors.js
 │       └── numberFormat.js
+├── tests/
+│   └── run-core-tests.js   # tests unitarios B1 (Node, sin npm)
 └── assets/
-    ├── icons/          # Iconos (futuro)
-    └── images/         # Imágenes (futuro)
+    ├── icons/
+    └── images/
 ```
 
 ### Responsabilidad de cada carpeta `js/`
 
-- **`core/`** — evaluación de expresiones, operaciones básicas y científicas, pasos de cálculo.
+- **`core/`** — operaciones y (luego) evaluación/pasos. Sin DOM.
 - **`converters/`** — unidades, monedas y bases numéricas.
-- **`ui/`** — DOM, teclado virtual/físico, atajos, modo oscuro, estados de carga/error, historial.
-- **`utils/`** — helpers reutilizables (formato numérico, errores, etc.). Sin DOM.
+- **`ui/`** — DOM, teclado, temas, historial, errores visibles.
+- **`utils/`** — helpers compartidos. Sin DOM.
 
 **Regla:** no mezclar cálculo con DOM.
 
@@ -121,43 +97,51 @@ Se sirve HTML/CSS/JS estáticos. No hay npm, Vite, Webpack ni similares por ahor
 
 ### 5.2 Organización de scripts clásicos
 
-`index.html` carga los scripts con `<script>` en orden de dependencia.
-
-Orden actual (Etapa A):
+Orden actual (Etapa B1 + refactor `result`):
 
 1. `js/utils/errors.js`
 2. `js/utils/numberFormat.js`
-3. `js/app.js`
+3. `js/core/result.js`
+4. `js/core/operations.js`
+5. `js/core/scientific.js`
+6. `js/core/calculator.js`
+7. `js/app.js`
 
 Orden previsto cuando crezcan las capas: `utils` → `core` → `converters` → `ui` → `app.js`.
 
 ### 5.3 Estilos
 
-Un único archivo `css/styles.css` como hoja global. Temas (claro/oscuro) y layout responsive se definirán en etapas C1/C2.
+Un único archivo `css/styles.css` como hoja global. Temas y layout responsive en C1/C2.
 
 ### 5.4 Idioma de la interfaz
 
-Textos de UI, mensajes de error e historial en **inglés**. Si se requiere otro idioma o i18n, debe confirmarse antes de implementar pantallas.
+Textos de UI, mensajes de error e historial en **inglés**.
 
 ### 5.5 Etapa A — cimientos
 
-- `ProCalc.utils.errors`: códigos y fábrica de errores de aplicación.
-- `ProCalc.utils.numberFormat`: stub de formato; acepta `fractionDigits` por llamada.
-- `app.js` verifica que los utils cargaron y marca `ProCalc.stage = "A"`, `ProCalc.ready = true`.
-- El default interno `PROVISIONAL_FRACTION_DIGITS` es solo cableado temporal; **no** cierra el punto abierto §6.3.
+- `ProCalc.utils.errors` y `ProCalc.utils.numberFormat` (stub).
+- Default `PROVISIONAL_FRACTION_DIGITS` temporal; **no** cierra §6.3.
+
+### 5.6 Etapa B1 — motor de operaciones
+
+- API en `ProCalc.core` (fachada) más `ProCalc.core.operations` / `ProCalc.core.scientific`.
+- Helpers compartidos del contrato en `ProCalc.core.result` (`ok`, `fail`, `requireNumber`, `isValidNumber`); sin duplicar en operations/scientific.
+- Trigonométricas exigen `angleMode: "deg" | "rad"` en cada llamada. **No** hay default de producto; §6.2 sigue abierto.
+- Factorial solo enteros ≥ 0; `n > 170` → `OVERFLOW`.
+- División por cero → `DIVISION_BY_ZERO`.
+- Sin parser de expresiones ni pasos (eso es B2).
+- Tests: `node tests/run-core-tests.js` (vanilla, sin npm).
 
 ---
 
 ## 6. Puntos abiertos (pendientes de decisión)
 
-Estos puntos **siguen abiertos**. Hay que definirlos antes de implementar la funcionalidad correspondiente:
-
-1. **Monedas:** ¿tasas fijas/manuales o API externa en tiempo real? Si es API, ¿cuál y con qué política de actualización/caché?
-2. **Ángulos trigonométricos:** ¿grados, radianes, o ambos con selector?
-3. **Precisión numérica:** ¿cuántos decimales mostrar y cómo redondear?
-4. **Historial:** ¿solo en memoria de la sesión o persistencia (`localStorage`)?
-5. **Pasos del cálculo:** ¿para todas las operaciones o solo para un subconjunto (p. ej. expresiones compuestas)?
-6. **Nombre del producto en UI:** confirmar si se muestra siempre como **ProCalc**.
+1. **Monedas:** ¿tasas fijas/manuales o API externa?
+2. **Ángulos trigonométricos:** ¿grados, radianes, o ambos con selector? *(B1 soporta ambos vía parámetro; falta decisión de UX)*
+3. **Precisión numérica:** ¿cuántos decimales y cómo redondear?
+4. **Historial:** ¿sesión o `localStorage`?
+5. **Pasos del cálculo:** ¿todas las ops o un subconjunto?
+6. **Nombre del producto en UI:** ¿siempre **ProCalc**?
 
 **Pendiente de arquitectura (antes de B2):** modelo de entrada — teclado → tokens internos (recomendado) vs expresión de texto libre.
 
@@ -165,12 +149,10 @@ Estos puntos **siguen abiertos**. Hay que definirlos antes de implementar la fun
 
 ## 7. Plan de implementación aprobado
 
-Etapas acordadas. Cada una se implementa, se revisa y se aprueba antes de la siguiente.
-
 | Etapa | Alcance | Estado |
 |---|---|---|
-| **A** | Utils mínimos (`errors`, `numberFormat` stub) + arranque | Hecha — pendiente de revisión |
-| **B1** | Operaciones básicas/científicas puras (sin parser de expresiones) | Pendiente |
+| **A** | Utils mínimos + arranque | Hecha |
+| **B1** | Operaciones básicas/científicas puras (+ refactor `result` + tests) | Hecha — pendiente de revisión |
 | **B2** | Evaluación / pasos (tras §6.2, §6.3, §6.5 + modelo de entrada) | Pendiente |
 | **C1** | Shell UI + keypad + errores visibles | Pendiente |
 | **C2** | Tema / atajos / responsive | Pendiente |
@@ -179,26 +161,39 @@ Etapas acordadas. Cada una se implementa, se revisa y se aprueba antes de la sig
 
 ### Fuera de alcance hasta que se pida
 
-- Diseñar la interfaz final de la calculadora
-- Agregar librerías, frameworks o herramientas de build
-- Resolver los puntos abiertos de la sección 6 por cuenta propia
-- Implementar monedas antes de decidir §6.1
+- Diseñar la interfaz final
+- Librerías, frameworks o build tools
+- Resolver §6 por cuenta propia
+- Monedas antes de §6.1
+- Parser de expresiones / pasos (B2)
 
 ---
 
-## 8. Criterio de éxito — Etapa A
+## 8. Criterios de éxito
 
-- [x] Namespace `window.ProCalc` definido
-- [x] `js/utils/errors.js` y `js/utils/numberFormat.js` cargan antes de `app.js`
-- [x] `app.js` valida utils y deja `ProCalc.ready === true`
-- [x] Sin motor de cálculo, sin UI de calculadora, sin conversiones, sin historial
-- [x] Sin librerías externas ni build step
-- [x] Puntos abiertos §6 sin resolver (el default de formato es provisional y documentado)
-- [x] `spec.md` actualizado con plan aprobado y estado de Etapa A
+### Etapa A
 
-### Cómo revisar Etapa A
+- [x] Namespace `window.ProCalc`, utils, arranque
+- [x] Sin UI de calculadora ni motor
 
-1. Abrir `index.html` en el navegador (sin build).
-2. En la consola: `ProCalc.ready` → `true`, `ProCalc.stage` → `"A"`.
-3. Probar: `ProCalc.utils.errors.createError("DIVISION_BY_ZERO")`.
-4. Probar: `ProCalc.utils.numberFormat.formatNumber(0.1 + 0.2)`.
+### Etapa B1
+
+- [x] `result.js`, `operations.js`, `scientific.js`, `calculator.js` en `js/core/`
+- [x] Ops básicas y científicas del alcance §3.1 / §3.2 como API pura
+- [x] Resultados `{ ok, value }` / `{ ok, error }` usando `utils.errors` vía `core.result`
+- [x] Trigono con `angleMode` explícito (sin cerrar §6.2)
+- [x] Sin DOM, sin parser, sin pasos, sin historial, sin conversiones
+- [x] `app.js` marca `ProCalc.stage = "B1"` y `ProCalc.ready === true`
+- [x] Tests unitarios vanilla en `tests/run-core-tests.js`
+- [x] `spec.md` actualizado
+
+### Cómo revisar Etapa B1
+
+1. Abrir `index.html` en el navegador.
+2. `ProCalc.ready` → `true`, `ProCalc.stage` → `"B1"`.
+3. `ProCalc.core.add(2, 3)` → `{ ok: true, value: 5 }`.
+4. `ProCalc.core.divide(1, 0)` → error `DIVISION_BY_ZERO`.
+5. `ProCalc.core.sin(30, "deg")` → ≈ `0.5`.
+6. `ProCalc.core.sin(Math.PI / 2, "rad")` → ≈ `1`.
+7. `ProCalc.core.factorial(5)` → `120`; `ProCalc.core.factorial(-1)` → `DOMAIN_ERROR`.
+8. Correr `node tests/run-core-tests.js` y verificar que todos pasen.
